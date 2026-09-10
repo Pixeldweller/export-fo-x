@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.pixeldweller.export</groupId>
+  <artifactId>export-fo-x-parent</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>export-fo-x (parent)</name>
+  <description>
+    Fork/Weiterentwicklung von docx4j-export-fo 11.5.9: DOCX -&gt; PDF via XSL-FO
+    mit Unterstuetzung fuer seitenbezogen positionierte Kopfbogen-Elemente
+    (VML Textboxen, Linien, Rechtecke) sowie WMF/EMF-Grafiken.
+  </description>
+
+  <inceptionYear>2026</inceptionYear>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+      <comments>
+        Fork von docx4j-export-fo 11.5.9, Copyright Plutext Pty Ltd, ebenfalls
+        Apache-2.0. Siehe LICENSE und NOTICE im Wurzelverzeichnis.
+      </comments>
+    </license>
+  </licenses>
+
+  <modules>
+    <module>export-fo-x</module>
+    <module>export-fo-x-sample-app</module>
+  </modules>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <java.version>17</java.version>
+    <maven.compiler.release>17</maven.compiler.release>
+
+    <!-- Fixiert: Plutext Enterprise 11 -->
+    <docx4j.version>11.5.9</docx4j.version>
+    <fop.version>2.11</fop.version>
+    <batik.version>1.19</batik.version>
+    <xmlgraphics.commons.version>2.11</xmlgraphics.commons.version>
+    <wmf2svg.version>0.9.11</wmf2svg.version>
+    <slf4j.version>2.0.17</slf4j.version>
+    <spring.boot.version>3.5.16</spring.boot.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.pixeldweller.export</groupId>
+        <artifactId>export-fo-x</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.13.0</version>
+          <configuration>
+            <release>${maven.compiler.release}</release>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.2.5</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

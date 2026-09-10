@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>export-fo-x</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 15px/1.5 system-ui, sans-serif; max-width: 40rem; margin: 4rem auto; padding: 0 1rem; }
+  h1 { font-size: 1.4rem; margin-bottom: .25rem; }
+  p.sub { margin-top: 0; opacity: .7; }
+  form { border: 1px solid currentColor; border-radius: .5rem; padding: 1.25rem; margin-top: 2rem; }
+  button { margin-top: 1rem; padding: .5rem 1rem; font: inherit; cursor: pointer; }
+  code { background: rgba(127,127,127,.18); padding: .1rem .3rem; border-radius: .2rem; }
+  #status { margin-top: 1rem; min-height: 1.5rem; }
+</style>
+</head>
+<body>
+  <h1>export-fo-x</h1>
+  <p class="sub">DOCX hochladen, PDF zurückbekommen.</p>
+
+  <form id="f">
+    <label for="file">DOCX-Datei</label><br>
+    <input id="file" name="file" type="file" accept=".docx" required>
+    <br><button type="submit">Konvertieren</button>
+    <div id="status"></div>
+  </form>
+
+  <p>Oder per Kommandozeile:</p>
+  <p><code>curl -F file=@brief.docx http://localhost:8080/api/convert -o brief.pdf</code></p>
+
+<script>
+const form = document.getElementById('f');
+const status = document.getElementById('status');
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const input = document.getElementById('file');
+  if (!input.files.length) return;
+
+  status.textContent = 'Konvertiere …';
+  const body = new FormData();
+  body.append('file', input.files[0]);
+
+  try {
+    const response = await fetch('/api/convert', { method: 'POST', body });
+    if (!response.ok) {
+      status.textContent = 'Fehler ' + response.status + ': ' + (await response.text());
+      return;
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = input.files[0].name.replace(/\.docx$/i, '') + '.pdf';
+    link.click();
+    URL.revokeObjectURL(url);
+    status.textContent = 'Fertig.';
+  } catch (e) {
+    status.textContent = 'Fehler: ' + e;
+  }
+});
+</script>
+</body>
+</html>

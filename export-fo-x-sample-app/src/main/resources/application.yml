@@ -1,0 +1,39 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: export-fo-x-sample-app
+  servlet:
+    multipart:
+      # A DOCX with embedded images gets large; the PDF is built in memory.
+      max-file-size: 25MB
+      max-request-size: 25MB
+
+export-fo-x:
+  # Register the fonts your templates name. Without them docx4j substitutes, and
+  # because line breaking follows the substitute's metrics the document reflows.
+  #   font-directories:
+  #     - /opt/export-fo-x/fonts
+  font-directories: []
+
+  # Keep the paragraph carrying a w:sectPr in its own section (Word's behaviour).
+  normalize-section-breaks: true
+
+  # Rescale Word's "multiple" line spacing to the font's real line height.
+  normalize-line-spacing: true
+
+  # Resolve a leading tab in a hanging-indent paragraph into a first-line indent.
+  normalize-leading-tabs: true
+
+  # Set a directory to also write the intermediate XSL-FO of every conversion.
+  fo-dump-directory: ""
+
+logging:
+  level:
+    root: INFO
+    com.pixeldweller.export.fox: INFO
+    # docx4j and FOP are chatty about fonts and layout; turn these up when a
+    # conversion looks wrong.
+    org.docx4j: WARN
+    org.apache.fop: WARN

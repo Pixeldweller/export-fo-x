@@ -1,0 +1,27 @@
+target/
+*.class
+*.jar
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# Konvertierungs-Artefakte
+*.fo
+
+# Sperrdateien geöffneter Office-Dokumente, Betriebssystem-Krims
+.~lock.*#
+~$*
+.DS_Store
+Thumbs.db
+
+# Ursprungsmaterial mit echten Behörden-/Personendaten: bewusst nicht im Repository.
+# Die anonymisierte Fassung der Vorlage liegt in samples/.
+/export-fo.log
+/freigabe_antragsteller_auto.docx/
+/freigabe_antragsteller_auto.pdf.gz

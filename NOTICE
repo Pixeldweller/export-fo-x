@@ -1,0 +1,72 @@
+export-fo-x
+Copyright 2026 Pixeldweller (https://github.com/Pixeldweller)
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+--------------------------------------------------------------------------------
+docx4j
+--------------------------------------------------------------------------------
+
+export-fo-x is a fork of docx4j-export-fo 11.5.9 and contains source code from
+that project, both verbatim and modified.
+
+    docx4j
+    Copyright Plutext Pty Ltd
+    https://www.docx4java.org/
+    Licensed under the Apache License, Version 2.0
+
+Of the 31 source files taken from docx4j-export-fo 11.5.9, 23 are unchanged and
+8 were modified. Each modified file carries a notice to that effect in its
+header, as required by section 4(b) of the Apache License. The eight are:
+
+    org/docx4j/convert/out/fo/AbstractFOExporter.java
+    org/docx4j/convert/out/fo/FOConversionImageHandler.java
+    org/docx4j/convert/out/fo/FOPAreaTreeHelper.java
+    org/docx4j/convert/out/fo/FOPictWriterAbstract.java
+    org/docx4j/convert/out/fo/FOPictWriterFloatAvoided.java
+    org/docx4j/convert/out/fo/FOPictWriterFloatUsed.java
+    org/docx4j/convert/out/fo/FOPictWriterNoWrapImpl.java
+    org/docx4j/convert/out/fo/docx2fo.xslt
+
+Files under org/docx4j/convert/out/fo/x/ are new work by the export-fo-x
+project. They sit in the docx4j package namespace on purpose: export-fo-x
+is a drop-in replacement for docx4j-export-fo, so it has to keep that project's
+package and resource names for Docx4J.toPDF to keep working unchanged.
+
+--------------------------------------------------------------------------------
+Dependencies
+--------------------------------------------------------------------------------
+
+This repository does not redistribute its dependencies; it only declares them.
+A packaged application (for example the Spring Boot fat jar the sample module
+builds) does redistribute them, and then their notices travel with it. All of
+them are permissively licensed:
+
+    docx4j, jaxb-xslfo         Plutext Pty Ltd     Apache License 2.0
+    Apache FOP, Batik,
+      XML Graphics Commons     Apache Software Foundation
+                                                   Apache License 2.0
+    wmf2svg                    Hidekatsu Izuno     Apache License 2.0
+    Spring Boot                Broadcom            Apache License 2.0
+    SLF4J                      QOS.ch              MIT License
+
+The docx4j font artifacts bundle font files under their own terms, which are
+included in those jars:
+
+    docx4j-export-fo-fonts-croscore, -crosextra
+        Arimo, Tinos, Cousine   Apache License 2.0
+    docx4j-export-fo-fonts-symbol
+        DejaVu fonts            Bitstream Vera Fonts Copyright
+                                (permissive; carries a font-name clause)
+
+--------------------------------------------------------------------------------
+Sample document
+--------------------------------------------------------------------------------
+
+samples/freigabe_antragsteller_auto.docx is a placeholder administrative letter
+template. Authority name, addresses, telephone numbers, bank details, file
+reference, document properties, logo and the body text of the letter are all
+made up; the logo is a generated placeholder mark. What the file keeps from the
+document it was built from is its structure -- the VML shapes in the header, the
+hanging indent, the multiple line spacing -- which is what this project is about.
+See the "Anonymisierung" section of README.md.

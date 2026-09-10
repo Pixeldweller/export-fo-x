@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.pixeldweller.export</groupId>
+    <artifactId>export-fo-x-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>export-fo-x</artifactId>
+  <packaging>jar</packaging>
+
+  <name>export-fo-x</name>
+  <description>
+    Drop-in-Ersatz fuer docx4j-export-fo 11.5.9. Gleiche Packages/Ressourcen,
+    daher funktioniert Docx4J.toPDF(..) unveraendert -- aber mit korrekt
+    gerendertem Kopfbogen (seitenbezogene VML-Shapes) und WMF/EMF-Grafiken.
+  </description>
+
+  <dependencies>
+
+    <!-- docx4j Kern (Version durch Plutext Enterprise 11 fixiert).
+         docx4j-export-fo selbst ist NICHT Dependency: dieses Artefakt ersetzt es. -->
+    <dependency>
+      <groupId>org.docx4j</groupId>
+      <artifactId>docx4j-core</artifactId>
+      <version>${docx4j.version}</version>
+    </dependency>
+
+    <!-- XSL-FO Objektmodell -->
+    <dependency>
+      <groupId>org.plutext</groupId>
+      <artifactId>jaxb-xslfo</artifactId>
+      <version>11.4.0</version>
+    </dependency>
+
+    <!-- Apache FOP -->
+    <dependency>
+      <groupId>org.apache.xmlgraphics</groupId>
+      <artifactId>fop</artifactId>
+      <version>${fop.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.xmlgraphics</groupId>
+      <artifactId>fop-core</artifactId>
+      <version>${fop.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.xmlgraphics</groupId>
+      <artifactId>xmlgraphics-commons</artifactId>
+      <version>${xmlgraphics.commons.version}</version>
+    </dependency>
+
+    <!-- Batik: SVG-Rendering in FOP (u.a. fuer konvertierte WMF/EMF) -->
+    <dependency>
+      <groupId>org.apache.xmlgraphics</groupId>
+      <artifactId>batik-transcoder</artifactId>
+      <version>${batik.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.xmlgraphics</groupId>
+      <artifactId>batik-codec</artifactId>
+      <version>${batik.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.xmlgraphics</groupId>
+      <artifactId>batik-bridge</artifactId>
+      <version>${batik.version}</version>
+    </dependency>
+
+    <!-- WMF -> SVG -->
+    <dependency>
+      <groupId>net.arnx</groupId>
+      <artifactId>wmf2svg</artifactId>
+      <version>${wmf2svg.version}</version>
+    </dependency>
+
+    <!-- Fonts, wie in docx4j-export-fo -->
+    <dependency>
+      <groupId>org.docx4j</groupId>
+      <artifactId>docx4j-export-fo-fonts-symbol</artifactId>
+      <version>${docx4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.docx4j</groupId>
+      <artifactId>docx4j-export-fo-fonts-crosextra</artifactId>
+      <version>${docx4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.docx4j</groupId>
+      <artifactId>docx4j-export-fo-fonts-croscore</artifactId>
+      <version>${docx4j.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+
+    <!-- Tests -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.docx4j</groupId>
+      <artifactId>docx4j-JAXB-ReferenceImpl</artifactId>
+      <version>${docx4j.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.pdfbox</groupId>
+      <artifactId>pdfbox</artifactId>
+      <version>3.0.6</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>${slf4j.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <!-- Apache-2.0 §4(a)/§4(d): Lizenz und NOTICE reisen mit dem Artefakt mit. -->
+      <resource>
+        <directory>${project.basedir}/..</directory>
+        <targetPath>META-INF</targetPath>
+        <includes>
+          <include>LICENSE</include>
+          <include>NOTICE</include>
+        </includes>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>
