@@ -6,58 +6,165 @@
 <title>export-fo-x</title>
 <style>
   :root { color-scheme: light dark; }
-  body { font: 15px/1.5 system-ui, sans-serif; max-width: 40rem; margin: 4rem auto; padding: 0 1rem; }
+  body { font: 15px/1.5 system-ui, sans-serif; max-width: 48rem; margin: 3rem auto; padding: 0 1rem; }
   h1 { font-size: 1.4rem; margin-bottom: .25rem; }
+  h2 { font-size: 1.1rem; margin: 0 0 .25rem; }
   p.sub { margin-top: 0; opacity: .7; }
-  form { border: 1px solid currentColor; border-radius: .5rem; padding: 1.25rem; margin-top: 2rem; }
+  section { border: 1px solid; border-radius: .5rem; padding: 1.25rem; margin-top: 1.5rem; }
   button { margin-top: 1rem; padding: .5rem 1rem; font: inherit; cursor: pointer; }
   code { background: rgba(127,127,127,.18); padding: .1rem .3rem; border-radius: .2rem; }
-  #status { margin-top: 1rem; min-height: 1.5rem; }
+  .status { margin-top: 1rem; min-height: 1.5rem; }
+  .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .75rem 1rem; margin-top: 1rem; }
+  .field { display: flex; flex-direction: column; }
+  .field label { font-size: .8rem; opacity: .8; }
+  .field code { font-size: .7rem; opacity: .65; background: none; padding: 0; }
+  .field input { font: inherit; padding: .35rem .5rem; border: 1px solid; border-radius: .25rem; background: transparent; color: inherit; }
+  .row { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
 </style>
 </head>
 <body>
   <h1>export-fo-x</h1>
-  <p class="sub">DOCX hochladen, PDF zurückbekommen.</p>
+  <p class="sub">DOCX zu PDF – mit Kopfbogen.</p>
 
-  <form id="f">
-    <label for="file">DOCX-Datei</label><br>
-    <input id="file" name="file" type="file" accept=".docx" required>
-    <br><button type="submit">Konvertieren</button>
-    <div id="status"></div>
-  </form>
+  <section>
+    <h2>Beispielvorlage ausfüllen</h2>
+    <p class="sub">Die Felder kommen aus den <code>$PLATZHALTERN$</code> der mitgelieferten
+       Vorlage und sind mit passenden Werten vorbelegt.</p>
+    <div class="row">
+      <button type="button" id="load">Felder laden</button>
+      <button type="button" id="reset" hidden>Vorgaben zurücksetzen</button>
+    </div>
+    <form id="sampleForm" hidden>
+      <div class="fields" id="fields"></div>
+      <button type="submit">PDF erzeugen</button>
+      <div class="status" id="sampleStatus"></div>
+    </form>
+    <div class="status" id="loadStatus"></div>
+  </section>
+
+  <section>
+    <h2>Eigenes DOCX hochladen</h2>
+    <form id="uploadForm">
+      <div class="field">
+        <label for="file">DOCX-Datei</label>
+        <input id="file" name="file" type="file" accept=".docx" required>
+      </div>
+      <div class="field" style="margin-top:.75rem">
+        <label for="values">Platzhalterwerte (JSON, optional)</label>
+        <input id="values" name="values" type="text"
+               placeholder='{"NACHNAME_ANTRAGSTELLER":"Mustermann"}'>
+      </div>
+      <button type="submit">Konvertieren</button>
+      <div class="status" id="uploadStatus"></div>
+    </form>
+  </section>
 
   <p>Oder per Kommandozeile:</p>
-  <p><code>curl -F file=@brief.docx http://localhost:8080/api/convert -o brief.pdf</code></p>
+  <p><code>curl -F file=@brief.docx -F 'values={"NACHNAME_ANTRAGSTELLER":"Mustermann"}' \
+     http://localhost:8080/api/convert -o brief.pdf</code></p>
 
 <script>
-const form = document.getElementById('f');
-const status = document.getElementById('status');
+const $ = (id) => document.getElementById(id);
+let defaults = [];
 
-form.addEventListener('submit', async (event) => {
+function download(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+async function fail(response, status) {
+  let detail = await response.text();
+  try { detail = JSON.parse(detail).message || detail; } catch (e) { /* plain text */ }
+  status.textContent = 'Fehler ' + response.status + ': ' + detail;
+}
+
+function renderFields(list) {
+  $('fields').innerHTML = '';
+  for (const f of list) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'field';
+
+    const label = document.createElement('label');
+    label.setAttribute('for', 'f_' + f.name);
+    label.textContent = f.label;
+
+    const hint = document.createElement('code');
+    hint.textContent = '$' + f.name + '$';
+
+    const input = document.createElement('input');
+    input.id = 'f_' + f.name;
+    input.name = f.name;
+    input.value = f.defaultValue;
+
+    wrapper.append(label, hint, input);
+    $('fields').append(wrapper);
+  }
+}
+
+$('load').addEventListener('click', async () => {
+  $('loadStatus').textContent = 'Lade Felder …';
+  try {
+    const response = await fetch('/api/sample/fields');
+    if (!response.ok) return fail(response, $('loadStatus'));
+    defaults = await response.json();
+    renderFields(defaults);
+    $('sampleForm').hidden = false;
+    $('reset').hidden = false;
+    $('loadStatus').textContent = defaults.length + ' Platzhalter gefunden.';
+  } catch (e) {
+    $('loadStatus').textContent = 'Fehler: ' + e;
+  }
+});
+
+$('reset').addEventListener('click', () => {
+  renderFields(defaults);
+  $('sampleStatus').textContent = '';
+});
+
+$('sampleForm').addEventListener('submit', async (event) => {
   event.preventDefault();
-  const input = document.getElementById('file');
-  if (!input.files.length) return;
+  $('sampleStatus').textContent = 'Erzeuge PDF …';
 
-  status.textContent = 'Konvertiere …';
+  const values = {};
+  for (const input of $('fields').querySelectorAll('input')) {
+    values[input.name] = input.value;
+  }
+  try {
+    const response = await fetch('/api/sample/pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(values),
+    });
+    if (!response.ok) return fail(response, $('sampleStatus'));
+    download(await response.blob(), 'musterbescheid.pdf');
+    $('sampleStatus').textContent = 'Fertig.';
+  } catch (e) {
+    $('sampleStatus').textContent = 'Fehler: ' + e;
+  }
+});
+
+$('uploadForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const file = $('file').files[0];
+  if (!file) return;
+
+  $('uploadStatus').textContent = 'Konvertiere …';
   const body = new FormData();
-  body.append('file', input.files[0]);
-
+  body.append('file', file);
+  if ($('values').value.trim()) {
+    body.append('values', $('values').value.trim());
+  }
   try {
     const response = await fetch('/api/convert', { method: 'POST', body });
-    if (!response.ok) {
-      status.textContent = 'Fehler ' + response.status + ': ' + (await response.text());
-      return;
-    }
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = input.files[0].name.replace(/\.docx$/i, '') + '.pdf';
-    link.click();
-    URL.revokeObjectURL(url);
-    status.textContent = 'Fertig.';
+    if (!response.ok) return fail(response, $('uploadStatus'));
+    download(await response.blob(), file.name.replace(/\.docx$/i, '') + '.pdf');
+    $('uploadStatus').textContent = 'Fertig.';
   } catch (e) {
-    status.textContent = 'Fehler: ' + e;
+    $('uploadStatus').textContent = 'Fehler: ' + e;
   }
 });
 </script>

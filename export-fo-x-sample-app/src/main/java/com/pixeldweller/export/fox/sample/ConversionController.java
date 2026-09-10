@@ -13,6 +13,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.Map;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.slf4j.Logger;
@@ -38,16 +43,25 @@ public class ConversionController {
 	private static final String DOCX_CONTENT_TYPE =
 			"application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
 	private final ConversionService conversionService;
 
 	public ConversionController(ConversionService conversionService) {
 		this.conversionService = conversionService;
 	}
 
+	/**
+	 * @param values optional JSON object of placeholder name to value, eg
+	 *               {@code {"NACHNAME_ANTRAGSTELLER":"Mustermann"}}. Any {@code $NAME$}
+	 *               in the document with a matching entry is replaced before rendering;
+	 *               the rest are left standing.
+	 */
 	@PostMapping(path = "/api/convert",
 			consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
 			produces = MediaType.APPLICATION_PDF_VALUE)
-	public ResponseEntity<byte[]> convert(@RequestParam("file") MultipartFile file) {
+	public ResponseEntity<byte[]> convert(@RequestParam("file") MultipartFile file,
+			@RequestParam(name = "values", required = false) String values) {
 
 		if (file.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The uploaded file is empty.");
@@ -58,9 +72,11 @@ public class ConversionController {
 					"Expected a .docx (WordprocessingML) file, got: " + filename);
 		}
 
+		Map<String, String> placeholderValues = parseValues(values);
+
 		byte[] pdf;
 		try (InputStream in = file.getInputStream()) {
-			pdf = conversionService.toPdf(in, filename);
+			pdf = conversionService.toPdf(in, filename, placeholderValues);
 		} catch (IOException e) {
 			log.warn("Could not read the upload {}", filename, e);
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -78,6 +94,18 @@ public class ConversionController {
 				.build());
 		headers.setContentLength(pdf.length);
 		return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
+	}
+
+	private static Map<String, String> parseValues(String json) {
+		if (json == null || json.isBlank()) {
+			return Map.of();
+		}
+		try {
+			return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, String>>() { });
+		} catch (JsonProcessingException e) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"'values' is not a JSON object of strings: " + e.getOriginalMessage());
+		}
 	}
 
 	private static String originalFilename(MultipartFile file) {

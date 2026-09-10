@@ -22,7 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 class ConversionControllerTest {
 
-	private static final String SAMPLE = "/freigabe_antragsteller_auto.docx";
+	private static final String SAMPLE = "/sample/freigabe_antragsteller_auto.docx";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -52,6 +52,28 @@ class ConversionControllerTest {
 					.contains("Musterbehörde Musterstadt")
 					.contains("Landeskasse Musterstadt");
 		}
+	}
+
+	@Test
+	void fillsThePlaceholdersGivenInTheValuesPart() throws Exception {
+		byte[] pdf = mockMvc.perform(multipart("/api/convert").file(sample())
+						.param("values", "{\"NACHNAME_ANTRAGSTELLER\":\"Sonderbach\"}"))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsByteArray();
+
+		try (PDDocument document = Loader.loadPDF(pdf)) {
+			String text = new PDFTextStripper().getText(document);
+			assertThat(text).contains("Sonderbach");
+			// The ones with no value given stay visible instead of going blank.
+			assertThat(text).contains("$VORNAME_ANTRAGSTELLER$");
+		}
+	}
+
+	@Test
+	void rejectsValuesThatAreNotJson() throws Exception {
+		mockMvc.perform(multipart("/api/convert").file(sample())
+						.param("values", "{das ist kein json"))
+				.andExpect(status().isBadRequest());
 	}
 
 	@Test

@@ -14,11 +14,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import com.pixeldweller.export.fox.ConversionOptions;
 import com.pixeldweller.export.fox.DocxToPdfConverter;
+import com.pixeldweller.export.fox.sample.template.Placeholder;
+import com.pixeldweller.export.fox.sample.template.PlaceholderTemplate;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
+import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -45,16 +50,35 @@ public class ConversionService {
 	 * @return the rendered PDF
 	 */
 	public byte[] toPdf(InputStream docx, String filename) throws Docx4JException {
+		return toPdf(docx, filename, Map.of());
+	}
+
+	/**
+	 * Fills the template's {@code $NAME$} placeholders and renders the result.
+	 *
+	 * @param values   placeholder name to value; a placeholder that is not listed stays
+	 *                 in the PDF as it is, so a half-filled form is visible rather than
+	 *                 silently blank
+	 */
+	public byte[] toPdf(InputStream docx, String filename, Map<String, String> values)
+			throws Docx4JException {
 
 		long started = System.currentTimeMillis();
+		WordprocessingMLPackage template = WordprocessingMLPackage.load(docx);
+
+		int stamped = PlaceholderTemplate.stamp(template, values);
+
 		ByteArrayOutputStream pdf = new ByteArrayOutputStream(INITIAL_BUFFER_BYTES);
+		withFoDump(filename).convert(template, pdf);
 
-		DocxToPdfConverter perRequest = withFoDump(filename);
-		perRequest.convert(docx, pdf);
-
-		log.info("Converted {} ({} bytes PDF) in {} ms",
-				filename, pdf.size(), System.currentTimeMillis() - started);
+		log.info("Converted {} ({} placeholder(s) filled, {} bytes PDF) in {} ms",
+				filename, stamped, pdf.size(), System.currentTimeMillis() - started);
 		return pdf.toByteArray();
+	}
+
+	/** The placeholders in a template, each with a suggested value. */
+	public List<Placeholder> placeholdersOf(InputStream docx) throws Docx4JException {
+		return PlaceholderTemplate.scan(WordprocessingMLPackage.load(docx));
 	}
 
 	/**

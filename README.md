@@ -371,7 +371,10 @@ curl -F file=@samples/freigabe_antragsteller_auto.docx \
      http://localhost:8080/api/convert -o brief.pdf
 ```
 
-Unter <http://localhost:8080/> liegt zusätzlich ein kleines Upload-Formular.
+Unter <http://localhost:8080/> liegt zusätzlich ein Formular: Upload von Hand, und –
+aus den `$PLATZHALTERN$` der Beispielvorlage generiert – ein ausfüllbares Feldformular
+mit passenden Vorgabewerten. Details in der
+[README der Anwendung](export-fo-x-sample-app/README.md).
 
 | Antwort | Bedeutung |
 |---|---|
