@@ -344,6 +344,14 @@ try (InputStream in  = new FileInputStream("brief.docx");
 }
 ```
 
+### Betrieb im Tomcat / nur `/tmp` beschreibbar
+
+Vier Stellen wollen schreiben, alle abgeleitet aus `user.home` bzw. `java.io.tmpdir` –
+und unter Tomcat ist `java.io.tmpdir` nicht `/tmp`, sondern `$CATALINA_BASE/temp`.
+Schriften, die im WAR stecken, brauchen zudem eine Sonderbehandlung, weil eine
+`jar:`-URI die Zeilenhöhen-Messung ausschaltet. Beides ist in der
+[README der Anwendung](export-fo-x-sample-app/README.md#betrieb-im-tomcat) beschrieben.
+
 ### Schriften
 
 **Das ist der wichtigste Betriebsparameter.** Findet docx4j eine Schrift nicht, wird sie

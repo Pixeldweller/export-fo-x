@@ -17,6 +17,20 @@ export-fo-x:
   #     - /opt/export-fo-x/fonts
   font-directories: []
 
+  # Fonts shipped inside the jar/war: this classpath directory is copied out at
+  # startup and registered. Deliberately not "fonts" -- docx4j scans that name
+  # itself but takes only the first classpath match, so it would hide the fonts in
+  # docx4j-export-fo-fonts-crosextra. Empty disables it.
+  font-resource-path: fonts-app
+
+  # Where those fonts are copied to. Empty means a directory under java.io.tmpdir,
+  # which under Tomcat is $CATALINA_BASE/temp and NOT /tmp.
+  font-extract-directory: ""
+
+  # Where images pulled out of a document are written while converting. Empty means
+  # java.io.tmpdir. Set it when that is not writable.
+  image-dir-path: ""
+
   # Keep the paragraph carrying a w:sectPr in its own section (Word's behaviour).
   normalize-section-breaks: true
 

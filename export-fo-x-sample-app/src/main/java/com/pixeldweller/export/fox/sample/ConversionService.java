@@ -96,6 +96,7 @@ public class ConversionService {
 				.setNormalizeSectionBreaks(options.isNormalizeSectionBreaks())
 				.setNormalizeLineSpacing(options.isNormalizeLineSpacing())
 				.setNormalizeLeadingTabs(options.isNormalizeLeadingTabs())
+				.setImageDirPath(options.getImageDirPath())
 				.setFoDumpFile(dumpFile(directory, filename));
 		for (File fontDirectory : options.getFontDirectories()) {
 			perRequest.addFontDirectory(fontDirectory);

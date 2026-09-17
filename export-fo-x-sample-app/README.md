@@ -97,12 +97,72 @@ ganze Dokument neu. Die Beispielvorlage braucht Open Sans, Arial und Times New R
 Geht eine Konvertierung schief: `fo-dump-directory` setzen, `logging.level.org.docx4j`
 auf `DEBUG` und `org.apache.fop` auf `INFO` stellen, in die Zwischen-FO schauen.
 
-## Betrieb ohne `user.home`
+## Betrieb im Tomcat
 
-Läuft der Container unter einer beliebigen UID ohne passwd-Eintrag, setzt das JDK
-`user.home` auf `"?"`. docx4j leitet daraus den Pfad seines Font-Caches ab und schreibt
-ihn dann relativ ins Arbeitsverzeichnis – bei schreibgeschütztem Arbeitsverzeichnis mit
-einem `ExceptionInInitializerError` beim ersten Laden von `IdentityPlusMapper`.
+```bash
+mvn -Pwar package      # -> target/export-fo-x-sample-app-<version>.war
+```
 
-`main()` fängt das mit `FontCacheHome.ensureUsable()` ab, noch bevor Spring startet.
-Alternativ oder zusätzlich reicht ein `-Duser.home=/tmp` beim JVM-Start.
+Das WAR ist zusätzlich mit `java -jar` startbar. Quellen sind für beide Modi dieselben:
+`ExportFoXSampleApplication` erweitert `SpringBootServletInitializer`.
+
+### Was schreiben will – und wohin
+
+Vier Dinge legen Dateien an, alle abgeleitet aus `user.home` bzw. `java.io.tmpdir`:
+
+| Wer | Pfad |
+|---|---|
+| docx4js FOP-Font-Cache | `<user.home>/.docx4j/fop-fonts.cache` |
+| Apache FOPs eigener Font-Cache | `<user.home>/.fop/fop-fonts.cache` |
+| Im DOCX eingebettete Schriften | `<user.home>/.docx4j/temporary embedded fonts/` |
+| Beim Konvertieren extrahierte Bilder | `java.io.tmpdir`, überschreibbar mit `image-dir-path` |
+
+**Unter Tomcat ist `java.io.tmpdir` nicht `/tmp`, sondern `$CATALINA_BASE/temp`.** Auf
+einem Host, auf dem nur `/tmp` beschreibbar ist, greift der eingebaute Fallback also ins
+falsche Verzeichnis, meldet eine Warnung – und docx4j landet wieder beim relativen Pfad
+`.docx4j` im Arbeitsverzeichnis, was mit einem `ExceptionInInitializerError` endet.
+
+Deshalb in `setenv.sh` explizit setzen:
+
+```sh
+CATALINA_OPTS="$CATALINA_OPTS -Duser.home=/tmp/export-fo-x"
+CATALINA_OPTS="$CATALINA_OPTS -Djava.awt.headless=true"
+```
+
+`user.home` selbst zu setzen ist robuster, als sich auf den Fallback zu verlassen: es
+deckt alle vier Verbraucher ab und hängt nicht an `java.io.tmpdir`. Prüfe außerdem, ob
+wirklich nur `/tmp` beschreibbar ist – Tomcat braucht `temp/` und `work/` selbst, um
+überhaupt zu laufen.
+
+Ist `$CATALINA_BASE/temp` nicht beschreibbar, zusätzlich:
+
+```yaml
+export-fo-x:
+  font-extract-directory: /tmp/export-fo-x/fonts
+  image-dir-path: /tmp/export-fo-x/images
+```
+
+### Schriften im WAR
+
+Schriftdateien unter `src/main/resources/fonts-app/` werden beim Start in ein
+beschreibbares Verzeichnis ausgepackt und dort registriert. Das ist nicht Bequemlichkeit,
+sondern nötig:
+
+* `addFontDirectory` listet ein Verzeichnis auf – in einem gepackten WAR gibt es keines.
+* docx4j kann Fonts zwar aus einem Jar lesen (`PhysicalFonts.discoverJarFonts`),
+  registriert sie dann aber unter einer `jar:`-URI. export-fo-x misst die echte
+  Zeilenhöhe der Schrift, um Words „Mehrfach"-Zeilenabstand nachzubilden, und braucht
+  dafür eine öffenbare Datei. Nachgemessen: bei einer `jar:`-URI liefert die Messung
+  `1,0000` – also „unbekannt, nichts ändern" –, und der Zeilenabstand fällt **still** auf
+  das falsche docx4j-Verhalten zurück.
+
+Der Ordner heißt absichtlich nicht `fonts`: docx4j durchsucht diesen Namen selbst, nimmt
+dabei aber nur den **ersten** Treffer im Klassenpfad. Nachgemessen: liegt ein eigenes
+`fonts/` vor `docx4j-export-fo-fonts-crosextra`, findet `discoverJarFonts()` nur noch die
+eigene Schrift statt der acht aus dem Jar. Der Extraktor hier benutzt Springs
+`classpath*:`-Resolver, der **alle** Treffer findet und auch mit Tomcats `war:`-Protokoll
+für ein nicht entpacktes WAR umgeht.
+
+Verifiziert mit einem gepackten WAR, leerem Temp-Verzeichnis und nicht existierendem
+`user.home`: Fonts ausgepackt, registriert, PDF mit eingebettetem Open Sans und
+korrekter Seitenaufteilung (3 Seiten – ohne die Schrift wären es 2).

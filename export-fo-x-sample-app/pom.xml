@@ -11,7 +11,14 @@
   </parent>
 
   <artifactId>export-fo-x-sample-app</artifactId>
-  <packaging>jar</packaging>
+  <!-- Property-driven so one module can build either artefact; see the war profile. -->
+  <packaging>${sample.app.packaging}</packaging>
+
+  <properties>
+    <sample.app.packaging>jar</sample.app.packaging>
+    <!-- jar: Tomcat is embedded. war: the container provides it. -->
+    <tomcat.scope>compile</tomcat.scope>
+  </properties>
 
   <name>export-fo-x-sample-app</name>
   <description>Spring-Boot-Beispiel: nimmt ein DOCX entgegen und antwortet mit PDF.</description>
@@ -32,6 +39,11 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-tomcat</artifactId>
+      <scope>${tomcat.scope}</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -69,6 +81,37 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <!--
+      mvn -Pwar package  ->  target/export-fo-x-sample-app-<version>.war
+
+      Deployable in an external Tomcat. ExportFoXSampleApplication already extends
+      SpringBootServletInitializer, so no source changes are needed; note that main()
+      is NOT called in this mode, which is why the startup work sits in a static
+      initialiser there.
+    -->
+    <profile>
+      <id>war</id>
+      <properties>
+        <sample.app.packaging>war</sample.app.packaging>
+        <tomcat.scope>provided</tomcat.scope>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-war-plugin</artifactId>
+            <version>3.4.0</version>
+            <configuration>
+              <!-- A Spring Boot war needs no web.xml and no src/main/webapp. -->
+              <failOnMissingWebXml>false</failOnMissingWebXml>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <build>
     <resources>
