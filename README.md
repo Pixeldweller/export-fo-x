@@ -347,10 +347,12 @@ try (InputStream in  = new FileInputStream("brief.docx");
 ### Betrieb im Tomcat / nur `/tmp` beschreibbar
 
 Vier Stellen wollen schreiben, alle abgeleitet aus `user.home` bzw. `java.io.tmpdir` –
-und unter Tomcat ist `java.io.tmpdir` nicht `/tmp`, sondern `$CATALINA_BASE/temp`.
-Schriften, die im WAR stecken, brauchen zudem eine Sonderbehandlung, weil eine
-`jar:`-URI die Zeilenhöhen-Messung ausschaltet. Beides ist in der
-[README der Anwendung](export-fo-x-sample-app/README.md#betrieb-im-tomcat) beschrieben.
+und unter Tomcat ist `java.io.tmpdir` nicht `/tmp`, sondern `$CATALINA_BASE/temp`. Die
+Anwendung findet sich selbst ein beschreibbares Verzeichnis, **ohne JVM-Optionen**, was
+zählt, wenn man auf dem Server nur das Artefakt austauschen darf. Schriften, die im WAR
+stecken, brauchen zusätzlich eine Sonderbehandlung, weil eine `jar:`-URI die
+Zeilenhöhen-Messung ausschaltet. Beides samt Messwerten aus einem echten Tomcat steht in
+der [README der Anwendung](export-fo-x-sample-app/README.md#betrieb-im-tomcat).
 
 ### Schriften
 

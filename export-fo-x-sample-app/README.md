@@ -117,30 +117,52 @@ Vier Dinge legen Dateien an, alle abgeleitet aus `user.home` bzw. `java.io.tmpdi
 | Im DOCX eingebettete Schriften | `<user.home>/.docx4j/temporary embedded fonts/` |
 | Beim Konvertieren extrahierte Bilder | `java.io.tmpdir`, überschreibbar mit `image-dir-path` |
 
-**Unter Tomcat ist `java.io.tmpdir` nicht `/tmp`, sondern `$CATALINA_BASE/temp`.** Auf
-einem Host, auf dem nur `/tmp` beschreibbar ist, greift der eingebaute Fallback also ins
-falsche Verzeichnis, meldet eine Warnung – und docx4j landet wieder beim relativen Pfad
-`.docx4j` im Arbeitsverzeichnis, was mit einem `ExceptionInInitializerError` endet.
+**Dafür sind keine JVM-Optionen nötig.** Die Anwendung regelt das selbst, was wichtig ist,
+wenn man auf dem Server nur das Artefakt austauschen darf:
 
-Deshalb in `setenv.sh` explizit setzen:
+* `user.home` wird im Static-Block von `ExportFoXSampleApplication` geprüft und, falls es
+  sich nicht auflöst, auf das erste beschreibbare Verzeichnis gebogen – in dieser
+  Reihenfolge: das vom Servlet-Container gemeldete Temp-Verzeichnis, dann
+  `java.io.tmpdir`, dann `/tmp`. Der Static-Block statt `main()`, weil **ein WAR `main()`
+  nie aufruft**; und zusätzlich noch einmal aus `onStartup`, wo
+  `jakarta.servlet.context.tempdir` verfügbar ist – laut Servlet-Spec garantiert
+  beschreibbar.
+* Ausgepackte Schriften und extrahierte Bilder landen standardmäßig im Temp-Verzeichnis
+  der Webanwendung (`$CATALINA_BASE/work/…/<app>/`), nicht in `$CATALINA_BASE/temp`.
 
-```sh
-CATALINA_OPTS="$CATALINA_OPTS -Duser.home=/tmp/export-fo-x"
-CATALINA_OPTS="$CATALINA_OPTS -Djava.awt.headless=true"
+Ein vorhandenes, funktionierendes `user.home` wird **nicht** angetastet – der Eingriff
+passiert nur, wenn es ohnehin kaputt ist. Auf einem geteilten Tomcat verändert die
+Anwendung damit nichts, worauf eine andere sich verlassen könnte.
+
+Nachgemessen in einem echten Tomcat 10.1, deployt als WAR, mit `-Duser.home=?` (so setzt
+es das JDK ohne passwd-Eintrag) und sonst **keiner** Option:
+
+```
+user.home was '?', which does not exist … Pointed user.home at $CATALINA_BASE/temp/docx4j-home-<user>
+Fonts from classpath:fonts-app available in $CATALINA_BASE/work/Catalina/localhost/<app>/export-fo-x-fonts
+Registered 4 font file(s)
+→ HTTP 200, 3 Seiten, OpenSans-Regular eingebettet, 0 Platzhalter übrig
 ```
 
-`user.home` selbst zu setzen ist robuster, als sich auf den Fallback zu verlassen: es
-deckt alle vier Verbraucher ab und hängt nicht an `java.io.tmpdir`. Prüfe außerdem, ob
-wirklich nur `/tmp` beschreibbar ist – Tomcat braucht `temp/` und `work/` selbst, um
-überhaupt zu laufen.
+Und derselbe Lauf mit **schreibgeschütztem `$CATALINA_BASE/temp`**:
 
-Ist `$CATALINA_BASE/temp` nicht beschreibbar, zusätzlich:
+```
+user.home was '?', which does not exist … Pointed user.home at /tmp/docx4j-home-<user>
+→ HTTP 200, 3 Seiten, beide Caches unter /tmp/docx4j-home-<user>/{.docx4j,.fop}
+```
+
+Falls doch etwas festzulegen ist, geht das über `application.yml` im WAR – ganz ohne
+Zugriff auf den Server:
 
 ```yaml
 export-fo-x:
   font-extract-directory: /tmp/export-fo-x/fonts
   image-dir-path: /tmp/export-fo-x/images
 ```
+
+Für das Verzeichnis der eingebetteten Schriften gibt es keinen eigenen Eintrag; es folgt
+`user.home`. Wer es getrennt setzen will, kann in der mitgelieferten `docx4j.properties`
+`docx4j.openpackaging.parts.WordprocessingML.ObfuscatedFontPart.tmpFontDir` angeben.
 
 ### Schriften im WAR
 

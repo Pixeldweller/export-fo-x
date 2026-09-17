@@ -9,6 +9,10 @@
  */
 package com.pixeldweller.export.fox.sample;
 
+import java.io.File;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
 import org.docx4j.convert.out.fo.x.FontCacheHome;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -62,5 +66,24 @@ public class ExportFoXSampleApplication extends SpringBootServletInitializer {
 	@Override
 	protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
 		return builder.sources(ExportFoXSampleApplication.class);
+	}
+
+	/**
+	 * Runs before Spring starts, and therefore before anything can load
+	 * {@code org.docx4j.fonts}. The static initialiser above has already had a go at
+	 * {@code user.home}, but only with the temp directories to choose from; here the
+	 * servlet container's own temp directory is available, which the servlet
+	 * specification requires to be writable. That matters on a host where
+	 * {@code $CATALINA_BASE/temp} is read-only and no JVM options can be added.
+	 *
+	 * <p>If the earlier attempt already succeeded, this call does nothing.
+	 */
+	@Override
+	public void onStartup(ServletContext servletContext) throws ServletException {
+		Object tempDir = servletContext.getAttribute(ServletContext.TEMPDIR);
+		if (tempDir instanceof File) {
+			FontCacheHome.ensureUsable((File) tempDir);
+		}
+		super.onStartup(servletContext);
 	}
 }
