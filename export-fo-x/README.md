@@ -33,7 +33,7 @@ Neu, in `org.docx4j.convert.out.fo.x`:
 | `LineSpacingNormalizer` | „Mehrfach"-Zeilenabstand an die Schriftmetrik binden |
 | `LeadingTabNormalizer` | führenden Tab in Absätzen mit hängendem Einzug zum Erstzeilen-Einzug auflösen |
 | `FontLineHeights` | misst die natürliche Zeilenhöhe einer Schrift |
-| `FontCacheHome` | sorgt für ein auflösbares `user.home`, bevor der Font-Cache geschrieben wird |
+| `FontCacheHome` | sorgt für ein auflösbares `user.home`, bevor der Font-Cache geschrieben wird, und für ein beschreibbares Verzeichnis für eingebettete Schriften |
 
 Fassade in `com.pixeldweller.export.fox`: `DocxToPdfConverter` und `ConversionOptions`.
 

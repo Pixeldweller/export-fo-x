@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.docx4j.Docx4jProperties;
+import org.docx4j.openpackaging.parts.AbstractFontPart;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -84,6 +86,79 @@ class FontCacheHomeTest {
 					.startsWith(nominated.toFile().getAbsolutePath()));
 		} finally {
 			System.setProperty("user.home", original);
+		}
+	}
+
+	@Test
+	void aConfiguredEmbeddedFontDirectoryIsCreatedWithItsParents(@TempDir Path base) {
+		// docx4j itself only calls mkdir(), so a nested path that does not exist yet stays
+		// missing -- and the next conversion fails in deleteEmbeddedFontTempFiles.
+		File nested = base.resolve("export-fo-x").resolve("embedded fonts").toFile();
+		String original = Docx4jProperties.getProperty(FontCacheHome.EMBEDDED_FONT_DIR_PROPERTY);
+		try {
+			Docx4jProperties.setProperty(FontCacheHome.EMBEDDED_FONT_DIR_PROPERTY,
+					nested.getAbsolutePath());
+
+			FontCacheHome.ensureEmbeddedFontDirectoryConfigured(null);
+
+			assertTrue(nested.isDirectory());
+			assertEquals(nested.getAbsolutePath(),
+					Docx4jProperties.getProperty(FontCacheHome.EMBEDDED_FONT_DIR_PROPERTY),
+					"a usable configured directory must not be replaced");
+		} finally {
+			restore(original);
+		}
+	}
+
+	@Test
+	void anUnusableEmbeddedFontDirectoryIsRedirectedToTheNominatedOne(@TempDir Path base)
+			throws IOException {
+		// A plain file where the directory should be: neither mkdirs nor writing can work,
+		// on any platform -- the stand-in for a root-owned home on RHEL.
+		File blocked = Files.createFile(base.resolve("blocked")).toFile();
+		File nominated = base.resolve("nominated").toFile();
+		assertTrue(nominated.mkdirs());
+		String original = Docx4jProperties.getProperty(FontCacheHome.EMBEDDED_FONT_DIR_PROPERTY);
+		try {
+			Docx4jProperties.setProperty(FontCacheHome.EMBEDDED_FONT_DIR_PROPERTY,
+					new File(blocked, "fonts").getAbsolutePath());
+
+			FontCacheHome.ensureEmbeddedFontDirectoryConfigured(nominated);
+
+			File redirected = new File(
+					Docx4jProperties.getProperty(FontCacheHome.EMBEDDED_FONT_DIR_PROPERTY));
+			assertTrue(redirected.getAbsolutePath().startsWith(nominated.getAbsolutePath()),
+					"expected the directory under " + nominated + ", got " + redirected);
+			assertTrue(redirected.isDirectory());
+			assertTrue(redirected.canWrite());
+		} finally {
+			restore(original);
+		}
+	}
+
+	@Test
+	void aVanishedEmbeddedFontDirectoryIsRecreated(@TempDir Path base) {
+		File gone = base.resolve("cleaned up").resolve("temporary embedded fonts").toFile();
+
+		FontCacheHome.recreate(gone);
+
+		assertTrue(gone.isDirectory());
+	}
+
+	@Test
+	void docx4jsEmbeddedFontDirectoryExistsOnceTheConverterHasRun() {
+		FontCacheHome.ensureEmbeddedFontDirectory();
+
+		File directory = AbstractFontPart.getTmpFontDir();
+		assertNotNull(directory);
+		assertTrue(directory.isDirectory(), directory + " does not exist");
+	}
+
+	private static void restore(String original) {
+		if (original == null) {
+			Docx4jProperties.getProperties().remove(FontCacheHome.EMBEDDED_FONT_DIR_PROPERTY);
+		} else {
+			Docx4jProperties.setProperty(FontCacheHome.EMBEDDED_FONT_DIR_PROPERTY, original);
 		}
 	}
 

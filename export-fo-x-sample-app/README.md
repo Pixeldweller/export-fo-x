@@ -161,8 +161,12 @@ export-fo-x:
 ```
 
 Für das Verzeichnis der eingebetteten Schriften gibt es keinen eigenen Eintrag; es folgt
-`user.home`. Wer es getrennt setzen will, kann in der mitgelieferten `docx4j.properties`
+`user.home`. Ist das zwar vorhanden, aber nicht beschreibbar (typisch für den
+`tomcat`-User unter RHEL), weicht export-fo-x selbst auf ein Verzeichnis unter dem
+Temp-Verzeichnis aus und legt es vor jeder Konvertierung neu an, falls es weggeräumt wurde.
+Wer es getrennt setzen will, kann in der mitgelieferten `docx4j.properties`
 `docx4j.openpackaging.parts.WordprocessingML.ObfuscatedFontPart.tmpFontDir` angeben.
+Elternverzeichnisse werden dabei mit angelegt.
 
 ### Schriften im WAR
 

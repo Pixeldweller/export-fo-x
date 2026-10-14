@@ -102,6 +102,11 @@ public class DocxToPdfConverter {
 			LeadingTabNormalizer.normalize(wordMLPackage);
 		}
 
+		// docx4j lists this directory after every conversion without a null check, so if
+		// it has gone -- tmpfiles cleanup of /tmp, say -- the conversion fails after the
+		// PDF has been written. See FontCacheHome.
+		FontCacheHome.ensureEmbeddedFontDirectory();
+
 		FOSettings settings = Docx4J.createFOSettings();
 		settings.setOpcPackage(wordMLPackage);
 		settings.setApacheFopMime(FOSettings.MIME_PDF);

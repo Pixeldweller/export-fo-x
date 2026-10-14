@@ -219,6 +219,30 @@ geladen wird. Wer `Docx4J.toPDF` direkt benutzt, ruft `FontCacheHome.ensureUsabl
 Start selbst auf – oder startet die JVM schlicht mit `-Duser.home=/tmp` bzw. `%TEMP%`.
 Abschalten lässt sich der Eingriff mit `-Dexportfox.userHomeFallback.disabled=true`.
 
+**Eingebettete Schriften – `NullPointerException` nach der Konvertierung.** Für das
+Verzeichnis, in das docx4j in der DOCX eingebettete Schriften auspackt, gibt es *keinen*
+Fallback. `AbstractFontPart` legt beim Laden `user.home/.docx4all/temporary embedded fonts`
+(oder den Wert von `docx4j.openpackaging.parts.WordprocessingML.ObfuscatedFontPart.tmpFontDir`)
+mit `mkdir()` an und ignoriert das Ergebnis. Nach **jeder** Konvertierung ruft
+`AbstractExporter` dann `ObfuscatedFontPart.deleteEmbeddedFontTempFiles` auf, und das
+macht `listFiles().length` ohne Null-Prüfung:
+
+```
+java.lang.NullPointerException: Cannot read the array length because "<local1>" is null
+    at org.docx4j.openpackaging.parts.WordprocessingML.ObfuscatedFontPart.deleteEmbeddedFontTempFiles(ObfuscatedFontPart.java:229)
+```
+
+Das PDF ist zu diesem Zeitpunkt schon geschrieben, die Konvertierung schlägt trotzdem fehl.
+Auslöser sind ein vorhandenes, aber nicht beschreibbares `user.home` (Dienstkonto unter
+RHEL, z. B. `tomcat` mit `/usr/share/tomcat`, das root gehört), ein konfigurierter Pfad,
+dessen Elternverzeichnis fehlt, oder ein Verzeichnis unter `/tmp`, das
+`systemd-tmpfiles` zur Laufzeit wegräumt.
+
+`FontCacheHome.ensureUsable()` prüft deshalb auch dieses Verzeichnis und biegt die
+docx4j-Property auf ein beschreibbares Verzeichnis um, wenn es sich nicht anlegen lässt.
+`DocxToPdfConverter` legt es außerdem vor jeder Konvertierung neu an, falls es
+verschwunden ist (`FontCacheHome.ensureEmbeddedFontDirectory()`).
+
 ---
 
 ### 10. Führender Tab in Absätzen mit hängendem Einzug ging verloren
