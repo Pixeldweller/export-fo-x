@@ -108,7 +108,9 @@ function renderFields(list) {
 $('load').addEventListener('click', async () => {
   $('loadStatus').textContent = 'Lade Felder …';
   try {
-    const response = await fetch('/api/sample/fields');
+    // Relative on purpose: resolved against the page, so it keeps the context path
+    // the war is deployed under (/export/pdf/ -> /export/pdf/api/...).
+    const response = await fetch('api/sample/fields');
     if (!response.ok) return fail(response, $('loadStatus'));
     defaults = await response.json();
     renderFields(defaults);
@@ -134,7 +136,7 @@ $('sampleForm').addEventListener('submit', async (event) => {
     values[input.name] = input.value;
   }
   try {
-    const response = await fetch('/api/sample/pdf', {
+    const response = await fetch('api/sample/pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(values),
@@ -159,7 +161,7 @@ $('uploadForm').addEventListener('submit', async (event) => {
     body.append('values', $('values').value.trim());
   }
   try {
-    const response = await fetch('/api/convert', { method: 'POST', body });
+    const response = await fetch('api/convert', { method: 'POST', body });
     if (!response.ok) return fail(response, $('uploadStatus'));
     download(await response.blob(), file.name.replace(/\.docx$/i, '') + '.pdf');
     $('uploadStatus').textContent = 'Fertig.';
